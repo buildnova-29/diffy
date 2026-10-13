@@ -22,6 +22,11 @@ export function listSheets(wb: WorkBook): string[] {
   return [...wb.SheetNames]
 }
 
+/** Read only the sheet names from a file's bytes. Fast, even for big files. */
+export function listSheetNames(data: ArrayBuffer | Uint8Array): string[] {
+  return [...read(data, { type: 'array', bookSheets: true }).SheetNames]
+}
+
 /**
  * Turn one sheet into a Table.
  * - `headerRow` is 1-based, as Excel shows it.

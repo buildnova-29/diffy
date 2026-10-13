@@ -5,28 +5,28 @@ import { matchRows } from '../matcher'
 import { makeWorkbook } from './helpers'
 
 const before = makeWorkbook({
-  BOM: [
-    ['Parent', 'Part', 'Qty', 'Desc', 'Notes'],
-    ['ASM-1', 'P-100', 2, 'Bolt M6', 'old'],
-    ['ASM-1', 'P-200', 4, 'Nut M6', ''],
-    ['ASM-1', 'P-300', 1, 'Bracket', ''],
-    ['ASM-2', 'P-100', 1, 'Bolt M6', ''],
+  Products: [
+    ['Region', 'Product', 'Qty', 'Desc', 'Notes'],
+    ['North', 'P-100', 2, 'Blue pen', 'old'],
+    ['North', 'P-200', 4, 'Pencil', ''],
+    ['North', 'P-300', 1, 'Eraser', ''],
+    ['South', 'P-100', 1, 'Blue pen', ''],
   ],
 })
 
 const after = makeWorkbook({
-  BOM: [
-    ['Parent', 'Part', 'Qty', 'Desc', 'Notes', 'Supplier'],
-    ['ASM-1', 'P-100', 3, 'Bolt M6', 'new', 'Acme'],
-    ['ASM-1', 'P-200', 4, 'nut m6 ', '', 'Acme'],
-    ['ASM-2', 'P-100', 1, 'Bolt M6', '', 'Acme'],
-    ['ASM-2', 'P-400', 6, 'Washer', '', 'Acme'],
+  Products: [
+    ['Region', 'Product', 'Qty', 'Desc', 'Notes', 'Supplier'],
+    ['North', 'P-100', 3, 'Blue pen', 'new', 'Acme'],
+    ['North', 'P-200', 4, 'pencil ', '', 'Acme'],
+    ['South', 'P-100', 1, 'Blue pen', '', 'Acme'],
+    ['South', 'P-400', 6, 'Marker', '', 'Acme'],
   ],
 })
 
 describe('compareWorkbooks', () => {
   const config = parseConfig({
-    sheets: [{ beforeSheet: 'BOM', keyColumns: ['Parent', 'Part'], ignoreColumns: ['Notes'] }],
+    sheets: [{ beforeSheet: 'Products', keyColumns: ['Region', 'Product'], ignoreColumns: ['Notes'] }],
   })
   const [diff] = compareWorkbooks(before, after, config)
 
@@ -36,14 +36,14 @@ describe('compareWorkbooks', () => {
 
   it('reports cell-level changes on composite keys', () => {
     const modified = diff.rows.find((r) => r.status === 'modified')
-    expect(modified?.key).toBe('ASM-1 | P-100')
+    expect(modified?.key).toBe('North | P-100')
     expect(modified?.changes).toEqual([{ column: 'Qty', before: 2, after: 3 }])
   })
 
   it('identifies added and removed rows', () => {
-    expect(diff.rows.find((r) => r.status === 'removed')?.key).toBe('ASM-1 | P-300')
+    expect(diff.rows.find((r) => r.status === 'removed')?.key).toBe('North | P-300')
     const added = diff.rows.find((r) => r.status === 'added')
-    expect(added?.key).toBe('ASM-2 | P-400')
+    expect(added?.key).toBe('South | P-400')
     expect(added?.afterRow?.rowNumber).toBe(5)
   })
 
@@ -55,22 +55,22 @@ describe('compareWorkbooks', () => {
 
   it('honours an explicit compareColumns list', () => {
     const cfg = parseConfig({
-      sheets: [{ beforeSheet: 'BOM', keyColumns: ['Parent', 'Part'], compareColumns: ['Desc'] }],
+      sheets: [{ beforeSheet: 'Products', keyColumns: ['Region', 'Product'], compareColumns: ['Desc'] }],
     })
     const [d] = compareWorkbooks(before, after, cfg)
     expect(d.summary.modified).toBe(0)
   })
 
   it('throws when a key column is missing', () => {
-    const cfg = parseConfig({ sheets: [{ beforeSheet: 'BOM', keyColumns: ['Item No'] }] })
+    const cfg = parseConfig({ sheets: [{ beforeSheet: 'Products', keyColumns: ['Item code'] }] })
     expect(() => compareWorkbooks(before, after, cfg)).toThrow(MissingColumnError)
   })
 
   it('maps differently named sheets', () => {
-    const renamed = makeWorkbook({ 'BOM v2': [['Part', 'Qty'], ['P-1', 1]] })
-    const orig = makeWorkbook({ BOM: [['Part', 'Qty'], ['P-1', 2]] })
+    const renamed = makeWorkbook({ 'Products v2': [['Product', 'Qty'], ['P-1', 1]] })
+    const orig = makeWorkbook({ Products: [['Product', 'Qty'], ['P-1', 2]] })
     const cfg = parseConfig({
-      sheets: [{ beforeSheet: 'BOM', afterSheet: 'BOM v2', keyColumns: ['Part'] }],
+      sheets: [{ beforeSheet: 'Products', afterSheet: 'Products v2', keyColumns: ['Product'] }],
     })
     expect(compareWorkbooks(orig, renamed, cfg)[0].summary.modified).toBe(1)
   })

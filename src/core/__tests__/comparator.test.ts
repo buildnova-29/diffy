@@ -6,12 +6,12 @@ const opts = (o = {}) => CompareOptionsSchema.parse(o)
 
 describe('valuesEqual', () => {
   it('trims and ignores case by default', () => {
-    expect(valuesEqual('  Bolt ', 'bolt', opts())).toBe(true)
+    expect(valuesEqual('  Pen ', 'pen', opts())).toBe(true)
   })
 
   it('respects caseSensitive and trim=false', () => {
-    expect(valuesEqual('Bolt', 'bolt', opts({ caseSensitive: true }))).toBe(false)
-    expect(valuesEqual('Bolt ', 'Bolt', opts({ trim: false }))).toBe(false)
+    expect(valuesEqual('Pen', 'pen', opts({ caseSensitive: true }))).toBe(false)
+    expect(valuesEqual('Pen ', 'Pen', opts({ trim: false }))).toBe(false)
   })
 
   it('treats numeric text as numbers', () => {
@@ -45,8 +45,8 @@ describe('valuesEqual', () => {
 
 describe('compareRows', () => {
   it('returns only the changed columns', () => {
-    const before = { rowNumber: 2, values: { Qty: 1, Desc: 'Bolt', UOM: 'EA' } }
-    const after = { rowNumber: 2, values: { Qty: 2, Desc: 'bolt', UOM: 'EA' } }
+    const before = { rowNumber: 2, values: { Qty: 1, Desc: 'Pen', UOM: 'EA' } }
+    const after = { rowNumber: 2, values: { Qty: 2, Desc: 'pen', UOM: 'EA' } }
     expect(compareRows(before, after, ['Qty', 'Desc', 'UOM'], opts())).toEqual([
       { column: 'Qty', before: 1, after: 2 },
     ])

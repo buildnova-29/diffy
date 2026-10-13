@@ -3,10 +3,10 @@ import { parseConfig, resolveOptions } from '../config'
 
 describe('parseConfig', () => {
   it('fills defaults', () => {
-    const cfg = parseConfig({ sheets: [{ beforeSheet: 'BOM', keyColumns: ['Part'] }] })
+    const cfg = parseConfig({ sheets: [{ beforeSheet: 'Products', keyColumns: ['Product'] }] })
     const s = cfg.sheets[0]
-    expect(s.name).toBe('BOM')
-    expect(s.afterSheet).toBe('BOM')
+    expect(s.name).toBe('Products')
+    expect(s.afterSheet).toBe('Products')
     expect(s.headerRow).toBe(1)
     expect(s.compareColumns).toEqual([])
     expect(cfg.options).toEqual({
@@ -19,7 +19,7 @@ describe('parseConfig', () => {
   })
 
   it('rejects a sheet without key columns', () => {
-    expect(() => parseConfig({ sheets: [{ beforeSheet: 'BOM', keyColumns: [] }] })).toThrow()
+    expect(() => parseConfig({ sheets: [{ beforeSheet: 'Products', keyColumns: [] }] })).toThrow()
   })
 
   it('rejects an empty sheet list', () => {
@@ -29,7 +29,7 @@ describe('parseConfig', () => {
   it('applies per-sheet option overrides', () => {
     const cfg = parseConfig({
       options: { numericTolerance: 0.5 },
-      sheets: [{ beforeSheet: 'BOM', keyColumns: ['Part'], options: { caseSensitive: true } }],
+      sheets: [{ beforeSheet: 'Products', keyColumns: ['Product'], options: { caseSensitive: true } }],
     })
     const opts = resolveOptions(cfg, cfg.sheets[0])
     expect(opts.caseSensitive).toBe(true)

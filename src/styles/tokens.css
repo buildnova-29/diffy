@@ -1,0 +1,123 @@
+/*
+ * diffy design tokens.
+ * Every colour in the app comes from here, so changing the scheme means
+ * editing this one file. Light mode first, then dark mode.
+ */
+:root {
+  color-scheme: light;
+
+  /* brand */
+  --brand-1: #7c3aed;        /* violet: File 1, logo */
+  --brand-1-strong: #6d28d9; /* buttons, links */
+  --brand-1-text: #5b21b6;
+  --brand-1-soft: #f8f5ff;
+  --brand-1-chip: #efe7ff;
+  --brand-2: #65a30d;        /* lime: File 2, logo */
+  --brand-2-text: #3f6212;
+  --brand-2-soft: #f6faee;
+  --brand-2-dash: #b9d98f;
+
+  /* surfaces and text */
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-sunken: #f7f7fa;
+  --border: #e4e4ea;
+  --divider: #ececf1;
+  --text: #16161d;
+  --text-muted: #5c5c6b;
+  --text-faint: #6b6b7a;
+  --on-brand: #ffffff;
+
+  /* change colours */
+  --changed-bg: #fff1c2;
+  --changed-fg: #8a5a00;
+  --added-bg: #eaf6ee;
+  --added-fg: #1f7a47;
+  --removed-bg: #fdecec;
+  --removed-fg: #b42318;
+  --ok: #1f7a47;
+  --warn-bg: #fff4db;
+  --warn-fg: #8a5a00;
+
+  /* disabled */
+  --disabled-bg: #ececf1;
+  --disabled-fg: #6b6b7a;
+
+  /* shape and type */
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 20px;
+  --font: 'Space Grotesk', system-ui, sans-serif;
+  --shadow-pop: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --brand-1: #a78bfa;
+    --brand-1-strong: #a78bfa;
+    --brand-1-text: #c9b8ff;
+    --brand-1-soft: #1b1726;
+    --brand-1-chip: #2a2140;
+    --brand-2: #a3e635;
+    --brand-2-text: #c2eb86;
+    --brand-2-soft: #161c12;
+    --brand-2-dash: #4a6330;
+    --bg: #111116;
+    --surface: #1a1a22;
+    --surface-sunken: #16161d;
+    --border: #2a2a35;
+    --divider: #24242e;
+    --text: #ededf2;
+    --text-muted: #a1a1ae;
+    --text-faint: #8e8e9c;
+    --on-brand: #111116;
+    --changed-bg: #2e2610;
+    --changed-fg: #f2c14e;
+    --added-bg: #12261a;
+    --added-fg: #6fd39a;
+    --removed-bg: #2c1515;
+    --removed-fg: #f49b9b;
+    --ok: #6fd39a;
+    --warn-bg: #2a220e;
+    --warn-fg: #f2c14e;
+    --disabled-bg: #24242e;
+    --disabled-fg: #8e8e9c;
+    --shadow-pop: 0 2px 8px rgba(0, 0, 0, 0.4);
+  }
+}
+
+/* Same dark values, for when the user picks dark mode by hand. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --brand-1: #a78bfa;
+  --brand-1-strong: #a78bfa;
+  --brand-1-text: #c9b8ff;
+  --brand-1-soft: #1b1726;
+  --brand-1-chip: #2a2140;
+  --brand-2: #a3e635;
+  --brand-2-text: #c2eb86;
+  --brand-2-soft: #161c12;
+  --brand-2-dash: #4a6330;
+  --bg: #111116;
+  --surface: #1a1a22;
+  --surface-sunken: #16161d;
+  --border: #2a2a35;
+  --divider: #24242e;
+  --text: #ededf2;
+  --text-muted: #a1a1ae;
+  --text-faint: #8e8e9c;
+  --on-brand: #111116;
+  --changed-bg: #2e2610;
+  --changed-fg: #f2c14e;
+  --added-bg: #12261a;
+  --added-fg: #6fd39a;
+  --removed-bg: #2c1515;
+  --removed-fg: #f49b9b;
+  --ok: #6fd39a;
+  --warn-bg: #2a220e;
+  --warn-fg: #f2c14e;
+  --disabled-bg: #24242e;
+  --disabled-fg: #8e8e9c;
+  --shadow-pop: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
