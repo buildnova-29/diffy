@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { downloadReport } from '../../export/download'
 import { useApp } from '../../state/store'
 import { isDefaultColours } from '../../state/settings'
 import { plural } from '../format'
@@ -9,8 +10,31 @@ import './results.css'
 
 /** Screen 3: what changed, sheet by sheet. */
 export function ResultsScreen() {
-  const { results, plan, first, second, colours, goTo, startOver } = useApp()
+  const { results, plan, first, second, colours, match, download, goTo, startOver } = useApp()
   const [tab, setTab] = useState(0)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+
+  const onDownload = async () => {
+    if (!results) return
+    setSaving(true)
+    setSaveError(null)
+    try {
+      await downloadReport({
+        results,
+        plan,
+        firstName: first?.name ?? 'First file',
+        secondName: second?.name ?? 'Second file',
+        match,
+        colours,
+        download,
+      })
+    } catch (e) {
+      setSaveError(`The report could not be made. ${e instanceof Error ? e.message : ''}`.trim())
+    } finally {
+      setSaving(false)
+    }
+  }
   const [layout, setLayout] = useState<Layout>('table')
   if (!results) return null
 
@@ -59,12 +83,24 @@ export function ResultsScreen() {
           <button type="button" className="btn btn-secondary" onClick={startOver}>
             Compare new files
           </button>
-          <button type="button" className="btn btn-primary" disabled title="The Excel report is the next step we build">
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={saving}
+            onClick={() => void onDownload()}
+            title={`Saves ${download.format === 'csv' ? 'a CSV file' : 'an Excel file'}. Change this under Download on the Set up screen.`}
+          >
             <DownloadIcon />
-            Download report
+            {saving ? 'Preparing…' : 'Download report'}
           </button>
         </div>
       </div>
+
+      {saveError && (
+        <p className="form-error" role="alert">
+          {saveError}
+        </p>
+      )}
 
       <div className="totals" aria-label="Totals across all compared sheets">
         <b>All {plural(results.length, 'sheet')}</b>
