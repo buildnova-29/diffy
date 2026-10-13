@@ -51,6 +51,22 @@ function groupByKey(rows: Row[], keyColumns: string[], opts: CompareOptions) {
 }
 
 /**
+ * No key: pair the 1st data row with the 1st, the 2nd with the 2nd, and so on.
+ * Extra rows at the end of either file count as added or removed.
+ */
+export function matchByPosition(before: Row[], after: Row[]): MatchResult {
+  const result: MatchResult = { matched: [], onlyBefore: [], onlyAfter: [], duplicates: [] }
+  const n = Math.max(before.length, after.length)
+  for (let i = 0; i < n; i++) {
+    const key = `Row ${i + 1}`
+    if (before[i] && after[i]) result.matched.push({ key, before: before[i], after: after[i] })
+    else if (before[i]) result.onlyBefore.push({ key, row: before[i] })
+    else result.onlyAfter.push({ key, row: after[i] })
+  }
+  return result
+}
+
+/**
  * Pair Before rows with After rows by key.
  * Duplicate keys are reported and paired in order of appearance
  * (1st Before duplicate with 1st After duplicate, and so on).
@@ -61,6 +77,8 @@ export function matchRows(
   keyColumns: string[],
   opts: CompareOptions,
 ): MatchResult {
+  if (keyColumns.length === 0) return matchByPosition(before, after)
+
   const b = groupByKey(before, keyColumns, opts)
   const a = groupByKey(after, keyColumns, opts)
   const result: MatchResult = { matched: [], onlyBefore: [], onlyAfter: [], duplicates: [] }

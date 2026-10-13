@@ -90,7 +90,7 @@ export function compareWorkbooks(before: WorkBook, after: WorkBook, config: Diff
   return config.sheets.map((sheet) =>
     compareTables(
       readTable(before, sheet.beforeSheet, sheet.headerRow),
-      readTable(after, sheet.afterSheet, sheet.headerRow),
+      readTable(after, sheet.afterSheet, sheet.afterHeaderRow),
       sheet,
       resolveOptions(config, sheet),
     ),

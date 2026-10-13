@@ -19,9 +19,4 @@ Most sheets have about 100 rows × 20 columns.
 | 9 | Archive_2024 | **Only in File 1.** Not compared; listed in the report. | | | | | |
 | 10 | Q2_Forecast | **Only in File 2.** Not compared; listed in the report. | | | | | |
 
-**Not covered automatically yet:**
-- Sheet 1 needs the row-by-row fallback.
-- Sheet 6 needs header-row detection.
-- Sheet 8 needs similar-name pairing.
-
-The regression test currently tells the engine the header row and sheet pairs. It should work these out by itself once those features are built (step 4 of the plan).
+**How it is checked:** the regression test gives diffy no hints. diffy must find the header rows, pair the sheets and pick the keys by itself. Then the counts above must match exactly.

@@ -37,10 +37,12 @@ export const SheetConfigSchema = z
     beforeSheet: z.string().min(1),
     /** Defaults to the same name as the Before sheet. */
     afterSheet: z.string().min(1).optional(),
-    /** 1-based row number holding the column headers. */
+    /** 1-based row number holding the column headers (in the first file). */
     headerRow: z.number().int().min(1).default(1),
-    /** Columns that together identify a row (primary key). */
-    keyColumns: z.array(z.string().min(1)).min(1, 'At least one key column is required'),
+    /** Header row in the second file. Defaults to the same as the first file. */
+    afterHeaderRow: z.number().int().min(1).optional(),
+    /** Columns that together identify a row. Empty = compare rows by position (row by row). */
+    keyColumns: z.array(z.string().min(1)).default([]),
     /** Columns to compare. Empty = every shared column except keys and ignored ones. */
     compareColumns: z.array(z.string().min(1)).default([]),
     /** Columns never compared. */
@@ -52,6 +54,7 @@ export const SheetConfigSchema = z
     ...s,
     name: s.name ?? s.beforeSheet,
     afterSheet: s.afterSheet ?? s.beforeSheet,
+    afterHeaderRow: s.afterHeaderRow ?? s.headerRow,
   }))
 
 export type SheetConfig = z.output<typeof SheetConfigSchema>

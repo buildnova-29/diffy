@@ -18,8 +18,10 @@ describe('parseConfig', () => {
     })
   })
 
-  it('rejects a sheet without key columns', () => {
-    expect(() => parseConfig({ sheets: [{ beforeSheet: 'Products', keyColumns: [] }] })).toThrow()
+  it('allows a sheet with no key columns (row by row)', () => {
+    const cfg = parseConfig({ sheets: [{ beforeSheet: 'Products' }] })
+    expect(cfg.sheets[0].keyColumns).toEqual([])
+    expect(cfg.sheets[0].afterHeaderRow).toBe(1)
   })
 
   it('rejects an empty sheet list', () => {
