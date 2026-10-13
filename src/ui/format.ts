@@ -4,9 +4,11 @@ import type { CellValue } from '../core'
 export function formatCell(v: CellValue): string {
   if (v === null || v === undefined) return ''
   if (v instanceof Date) {
-    const hasTime = v.getUTCHours() || v.getUTCMinutes() || v.getUTCSeconds()
-    const d = v.toISOString().slice(0, 10)
-    return hasTime ? `${d} ${v.toISOString().slice(11, 16)}` : d
+    // The Excel reader gives dates in the computer's own time zone, so read them back the same way.
+    const p2 = (n: number) => String(n).padStart(2, '0')
+    const d = `${v.getFullYear()}-${p2(v.getMonth() + 1)}-${p2(v.getDate())}`
+    const hasTime = v.getHours() || v.getMinutes() || v.getSeconds()
+    return hasTime ? `${d} ${p2(v.getHours())}:${p2(v.getMinutes())}` : d
   }
   if (typeof v === 'boolean') return v ? 'TRUE' : 'FALSE'
   if (typeof v === 'number') return Number.isInteger(v) ? String(v) : String(Number(v.toPrecision(12)))

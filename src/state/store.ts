@@ -62,6 +62,8 @@ interface AppState {
   setFile: (slot: Slot, file: LoadedFile | null) => void
   swap: () => void
   goTo: (step: Step) => void
+  /** "Compare new files": clear both files and their results; settings are kept. */
+  startOver: () => void
 
   /** Upload → Set up: read both files and let diffy work out the plan. */
   prepare: () => Promise<void>
@@ -102,6 +104,20 @@ export const useApp = create<AppState>((set, get) => ({
   setFile: (slot, file) => set({ ...({ [slot]: file } as Pick<AppState, Slot>), error: null }),
   swap: () => set((s) => ({ first: s.second, second: s.first })),
   goTo: (step) => set({ step }),
+  startOver: () =>
+    set({
+      step: 1,
+      first: null,
+      second: null,
+      wbFirst: null,
+      wbSecond: null,
+      preparedFor: '',
+      plan: [],
+      tables: [],
+      pairedByHand: [],
+      results: null,
+      error: null,
+    }),
 
   prepare: async () => {
     const { first, second, preparedFor } = get()
