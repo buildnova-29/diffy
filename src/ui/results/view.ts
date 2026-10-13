@@ -9,7 +9,7 @@ export type Filter = 'all' | RowStatus
 
 export interface Column {
   name: string
-  kind: 'key' | 'compare' | 'ignore'
+  kind: 'key' | 'compare' | 'ignore' | 'only'
 }
 
 /** Key columns first, then compared columns, then ignored ones (shown greyed). */
@@ -24,6 +24,12 @@ export function columnsOf(d: SheetDiff, ignored: string[]): Column[] {
   ]
 }
 
+/** Side by side: each file also shows the columns only it has. */
+export function sideColumns(d: SheetDiff, ignored: string[], which: 1 | 2): Column[] {
+  const only = which === 1 ? d.columnsOnlyInBefore : d.columnsOnlyInAfter
+  return [...columnsOf(d, ignored), ...only.map((name): Column => ({ name, kind: 'only' }))]
+}
+
 /** The value to show for a row: the second file's, except for removed rows. */
 export function valueOf(r: RowDiff, column: string): CellValue {
   const row = r.status === 'removed' ? r.beforeRow : r.afterRow
@@ -31,7 +37,13 @@ export function valueOf(r: RowDiff, column: string): CellValue {
 }
 
 export function counts(rows: RowDiff[]): Record<Filter, number> {
-  const c: Record<Filter, number> = { all: rows.length, modified: 0, added: 0, removed: 0, unchanged: 0 }
+  const c: Record<Filter, number> = {
+    all: rows.length,
+    modified: 0,
+    added: 0,
+    removed: 0,
+    unchanged: 0,
+  }
   for (const r of rows) c[r.status]++
   return c
 }

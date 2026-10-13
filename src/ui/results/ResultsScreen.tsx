@@ -3,7 +3,7 @@ import { useApp } from '../../state/store'
 import { paletteOf } from '../../state/settings'
 import { plural } from '../format'
 import { ArrowLeftIcon, DownloadIcon, InfoIcon } from '../icons'
-import { DiffTable } from './DiffTable'
+import { DiffTable, type Layout } from './DiffTable'
 import { differing } from './view'
 import './results.css'
 
@@ -11,6 +11,7 @@ import './results.css'
 export function ResultsScreen() {
   const { results, plan, first, second, colours, goTo, startOver } = useApp()
   const [tab, setTab] = useState(0)
+  const [layout, setLayout] = useState<Layout>('table')
   if (!results) return null
 
   const total = results.reduce(
@@ -37,7 +38,11 @@ export function ResultsScreen() {
   const style =
     colours.preset === 'default'
       ? undefined
-      : ({ '--hl-changed': pal.changed, '--hl-added': pal.added, '--hl-removed': pal.removed } as React.CSSProperties)
+      : ({
+          '--hl-changed': pal.changed,
+          '--hl-added': pal.added,
+          '--hl-removed': pal.removed,
+        } as React.CSSProperties)
 
   return (
     <main className={`page page-results${style ? ' custom-colours' : ''}`} style={style}>
@@ -104,7 +109,14 @@ export function ResultsScreen() {
             ))}
           </div>
           <div role="tabpanel">
-            <DiffTable key={current.name} diff={current} ignored={ignored} />
+            <DiffTable
+              key={current.name}
+              diff={current}
+              ignored={ignored}
+              layout={layout}
+              onLayout={setLayout}
+              names={[first?.name ?? 'First file', second?.name ?? 'Second file']}
+            />
           </div>
         </section>
       )}

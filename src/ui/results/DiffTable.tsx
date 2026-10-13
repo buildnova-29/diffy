@@ -2,7 +2,10 @@ import { useMemo, useState } from 'react'
 import type { CellValue, RowDiff, RowStatus, SheetDiff } from '../../core'
 import { formatCell, plural } from '../format'
 import { AlertIcon, EyeOffIcon, KeyIcon, SearchIcon } from '../icons'
-import { columnsOf, counts, valueOf, visibleRows, type Filter } from './view'
+import { SideBySide } from './SideBySide'
+import { columnsOf, counts, sideColumns, valueOf, visibleRows, type Filter } from './view'
+
+export type Layout = 'table' | 'sbs'
 
 const PAGE = 200
 
@@ -56,7 +59,19 @@ function Notes({ d }: { d: SheetDiff }) {
 }
 
 /** One sheet's differences: filters, search and the table. */
-export function DiffTable({ diff, ignored }: { diff: SheetDiff; ignored: string[] }) {
+export function DiffTable({
+  diff,
+  ignored,
+  layout,
+  onLayout,
+  names,
+}: {
+  diff: SheetDiff
+  ignored: string[]
+  layout: Layout
+  onLayout: (l: Layout) => void
+  names: [string, string]
+}) {
   const [filter, setFilter] = useState<Filter>('all')
   const [search, setSearch] = useState('')
   const [limit, setLimit] = useState(PAGE)
@@ -104,68 +119,107 @@ export function DiffTable({ diff, ignored }: { diff: SheetDiff; ignored: string[
             </button>
           ))}
         </div>
-        <label className="search">
-          <SearchIcon size={17} />
-          <input
-            type="search"
-            placeholder="Search rows"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value)
-              setLimit(PAGE)
-            }}
-          />
-        </label>
+        <div className="tools-right">
+          <div className="segmented" role="radiogroup" aria-label="Layout">
+            {(
+              [
+                ['table', 'Table'],
+                ['sbs', 'Side by side'],
+              ] as const
+            ).map(([v, label]) => (
+              <button
+                key={v}
+                type="button"
+                role="radio"
+                aria-checked={layout === v}
+                className={layout === v ? 'on' : ''}
+                onClick={() => onLayout(v)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <label className="search">
+            <SearchIcon size={17} />
+            <input
+              type="search"
+              placeholder="Search rows"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setLimit(PAGE)
+              }}
+            />
+          </label>
+        </div>
       </div>
 
       <Notes d={diff} />
 
-      <div className="diff-scroll">
-        <table className="diff">
-          <thead>
-            <tr>
-              <th className="mark-col">
-                <span className="visually-hidden">Status</span>
-              </th>
-              {cols.map((c) => (
-                <th key={`${c.kind}:${c.name}`} className={`th-${c.kind}`} title={c.kind === 'ignore' ? 'Ignored: not compared' : undefined}>
-                  <span className="th-in">
-                    {c.kind === 'key' && c.name && <KeyIcon size={14} />}
-                    {c.kind === 'ignore' && <EyeOffIcon size={14} />}
-                    {c.name || 'Row'}
-                  </span>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {shown.length === 0 && (
+      {layout === 'sbs' ? (
+        <SideBySide
+          rows={shown}
+          colsFirst={sideColumns(diff, ignored, 1)}
+          colsSecond={sideColumns(diff, ignored, 2)}
+          nameFirst={names[0]}
+          nameSecond={names[1]}
+        />
+      ) : (
+        <div className="diff-scroll">
+          <table className="diff">
+            <thead>
               <tr>
-                <td className="diff-empty" colSpan={cols.length + 1}>
-                  {search ? `No rows match "${search}".` : 'No rows here.'}
-                </td>
+                <th className="mark-col">
+                  <span className="visually-hidden">Status</span>
+                </th>
+                {cols.map((c) => (
+                  <th
+                    key={`${c.kind}:${c.name}`}
+                    className={`th-${c.kind}`}
+                    title={c.kind === 'ignore' ? 'Ignored: not compared' : undefined}
+                  >
+                    <span className="th-in">
+                      {c.kind === 'key' && c.name && <KeyIcon size={14} />}
+                      {c.kind === 'ignore' && <EyeOffIcon size={14} />}
+                      {c.name || 'Row'}
+                    </span>
+                  </th>
+                ))}
               </tr>
-            )}
-            {shown.map((r, i) => (
-              <tr key={`${r.key}#${i}`} className={`r-${r.status}`}>
-                <td className="mark-col">
-                  <span className={`mark mark-${r.status}`} title={MARK[r.status].label} aria-label={MARK[r.status].label}>
-                    {MARK[r.status].sign}
-                  </span>
-                </td>
-                {cols.map((c) => {
-                  const changed = r.status === 'modified' && r.changes.some((x) => x.column === c.name)
-                  return (
-                    <td key={`${c.kind}:${c.name}`} className={`td-${c.kind}${changed ? ' cell-changed' : ''}`}>
-                      {cell(r, c.name, c.kind)}
-                    </td>
-                  )
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {shown.length === 0 && (
+                <tr>
+                  <td className="diff-empty" colSpan={cols.length + 1}>
+                    {search ? `No rows match "${search}".` : 'No rows here.'}
+                  </td>
+                </tr>
+              )}
+              {shown.map((r, i) => (
+                <tr key={`${r.key}#${i}`} className={`r-${r.status}`}>
+                  <td className="mark-col">
+                    <span
+                      className={`mark mark-${r.status}`}
+                      title={MARK[r.status].label}
+                      aria-label={MARK[r.status].label}
+                    >
+                      {MARK[r.status].sign}
+                    </span>
+                  </td>
+                  {cols.map((c) => {
+                    const changed = r.status === 'modified' && r.changes.some((x) => x.column === c.name)
+                    return (
+                      <td key={`${c.kind}:${c.name}`} className={`td-${c.kind}${changed ? ' cell-changed' : ''}`}>
+                        {cell(r, c.name, c.kind)}
+                      </td>
+                    )
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <div className="table-foot">
         <span className="legend-row">

@@ -195,7 +195,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  width: min(300px, 100%);
+  flex: 0 1 260px;
+  min-width: 180px;
   padding: 0 12px;
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -425,4 +426,173 @@ table.diff {
 }
 .not-compared b {
   color: var(--text);
+}
+
+.tools-right {
+  display: flex;
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ---------- side by side ---------- */
+.sbs {
+  --row-h: 46px;
+  --head-h: 44px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px minmax(0, 1fr);
+  border-top: 1px solid var(--divider);
+  border-bottom: 1px solid var(--divider);
+}
+.sbs-side {
+  min-width: 0;
+}
+.sbs-name {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  font-size: 14px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--divider);
+}
+.sbs-name-1 {
+  background: var(--brand-1-soft);
+  color: var(--brand-1-text);
+}
+.sbs-name-2 {
+  background: var(--brand-2-soft);
+  color: var(--brand-2-text);
+}
+.sbs-name-mid {
+  padding: 0;
+  background: var(--surface-sunken);
+}
+.sbs-file {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sbs-pane {
+  /* Always keep the left/right scrollbar, so all three parts have the same height and rows stay lined up. */
+  overflow-x: scroll;
+  overflow-y: auto;
+  max-height: 64vh;
+}
+.sbs-pane:focus-visible {
+  outline: 2px solid var(--brand-1);
+  outline-offset: -2px;
+}
+/* The middle strip follows the two sides; it has no scrollbar of its own. */
+.sbs-pane-mid {
+  overflow-x: scroll;
+  overflow-y: hidden;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+table.sbs-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: max-content;
+  min-width: 100%;
+  font-size: 15px;
+}
+.sbs-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  height: var(--head-h);
+  box-sizing: border-box;
+  padding: 0 14px;
+  background: var(--surface-sunken);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.sbs-table th.th-key {
+  color: var(--brand-1-text);
+}
+.sbs-table th.th-ignore {
+  color: var(--text-faint);
+  text-decoration: line-through;
+}
+.sbs-table th.th-only,
+.sbs-table td.td-only {
+  color: var(--text-faint);
+  font-style: italic;
+}
+.sbs-table td {
+  height: var(--row-h);
+  box-sizing: border-box;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--divider);
+  color: var(--text);
+  white-space: nowrap;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sbs-table td.td-key {
+  font-weight: 500;
+}
+.sbs-table td.td-ignore {
+  color: var(--text-faint);
+}
+.sbs-table .r-unchanged td {
+  color: var(--text-muted);
+}
+.sbs-table .r-removed td {
+  color: var(--removed-fg);
+  text-decoration: line-through;
+}
+.sbs-table .r-added td {
+  color: var(--text);
+}
+/* The side that has no such row stays empty, with a faint stripe so it reads as a gap. */
+.sbs-table .r-missing {
+  background: repeating-linear-gradient(135deg, transparent 0 6px, var(--divider) 6px 7px);
+}
+.sbs-table td.cell-changed {
+  background: var(--changed-bg);
+  color: var(--changed-fg);
+  font-weight: 600;
+}
+.sbs-side-1 .sbs-table td.cell-changed {
+  font-weight: 400;
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+.sbs-sign {
+  width: 44px;
+  padding: 0 !important;
+  text-align: center;
+  font-weight: 700;
+}
+.sign-modified {
+  color: var(--changed-fg) !important;
+  text-decoration: none !important;
+}
+.sign-added {
+  color: var(--added-fg) !important;
+}
+.sign-removed {
+  color: var(--removed-fg) !important;
+  text-decoration: none !important;
+}
+.sign-unchanged {
+  color: var(--text-faint) !important;
+}
+@media (max-width: 700px) {
+  .sbs {
+    grid-template-columns: minmax(0, 1fr) 32px minmax(0, 1fr);
+  }
+  .sbs-sign {
+    width: 32px;
+  }
 }
