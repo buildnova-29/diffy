@@ -1,7 +1,8 @@
 import './ui/app.css'
 import { useApp } from './state/store'
 import { Header } from './ui/Header'
-import { SetupPlaceholder } from './ui/SetupPlaceholder'
+import { ResultsPlaceholder } from './ui/ResultsPlaceholder'
+import { SetupScreen } from './ui/setup/SetupScreen'
 import { UploadScreen } from './ui/UploadScreen'
 
 export default function App() {
@@ -10,7 +11,8 @@ export default function App() {
     <div className="app">
       <Header step={step} />
       {step === 1 && <UploadScreen />}
-      {step === 2 && <SetupPlaceholder />}
+      {step === 2 && <SetupScreen />}
+      {step === 3 && <ResultsPlaceholder />}
     </div>
   )
 }

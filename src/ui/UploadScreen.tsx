@@ -4,7 +4,7 @@ import { ArrowRightIcon, ShieldIcon, SwapIcon } from './icons'
 
 /** Screen 1: add the two files. */
 export function UploadScreen() {
-  const { first, second, setFile, swap, goTo } = useApp()
+  const { first, second, busy, error, setFile, swap, prepare } = useApp()
   const ready = Boolean(first && second)
 
   return (
@@ -29,14 +29,20 @@ export function UploadScreen() {
         </button>
       </div>
 
+      {error && (
+        <p className="form-error" role="alert">
+          {error}
+        </p>
+      )}
+
       <div className="page-foot">
         <span className="privacy">
           <ShieldIcon size={17} />
           Files stay on your computer. Nothing is uploaded.
         </span>
-        <button type="button" className="btn btn-primary" disabled={!ready} onClick={() => goTo(2)}>
-          Next
-          <ArrowRightIcon />
+        <button type="button" className="btn btn-primary" disabled={!ready || busy} onClick={() => void prepare()}>
+          {busy ? 'Reading files…' : 'Next'}
+          {!busy && <ArrowRightIcon />}
         </button>
       </div>
     </main>

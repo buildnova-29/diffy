@@ -216,3 +216,12 @@ function looksLikeLabel(rows: Row[], col: string, opts: CompareOptions) {
   }
   return filled > 0 && text / filled >= 0.9
 }
+
+/** Checks a key the user picked: is it unique in both files, or how many repeats? */
+export function checkKey(a: Table, b: Table, cols: string[], opts: CompareOptions): KeySuggestion {
+  if (cols.length === 0) return { columns: [], confidence: 'none', duplicates: 0 }
+  const ra = repeats(a.rows, cols, opts)
+  const rb = repeats(b.rows, cols, opts)
+  const dup = Math.max(ra.dup, rb.dup) + Math.max(ra.blanks, rb.blanks)
+  return { columns: cols, confidence: dup === 0 ? 'unique' : 'mostlyUnique', duplicates: dup }
+}
