@@ -71,7 +71,6 @@ export interface DownloadSettings {
   format: 'xlsx' | 'csv'
   includeUnchanged: boolean
   summarySheet: boolean
-  oldValues: 'cell' | 'comment' | 'column'
 }
 
 export const DEFAULT_DOWNLOAD: DownloadSettings = {
@@ -79,7 +78,6 @@ export const DEFAULT_DOWNLOAD: DownloadSettings = {
   format: 'xlsx',
   includeUnchanged: true,
   summarySheet: true,
-  oldValues: 'comment',
 }
 
 /** "price list march.xlsx" + "price list april.xlsx" → "diffy_price_list_march_vs_price_list_april". */

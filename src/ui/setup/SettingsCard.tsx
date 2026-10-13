@@ -170,11 +170,6 @@ export function SettingsCard() {
 
   const excel = download.format === 'xlsx'
   const onCount = MATCH.filter((m) => match[m.key])
-  const oldWhere = {
-    cell: 'Old values in the cell',
-    comment: 'Old values in comments',
-    column: 'Old values in a column',
-  }[download.oldValues]
   const summaries: Record<Section, React.ReactNode> = {
     options: onCount.length ? onCount.map((m) => m.short).join(' · ') : 'Exact match: every difference counts',
     color: (
@@ -186,7 +181,12 @@ export function SettingsCard() {
       </>
     ),
     download: excel
-      ? ['Excel', download.summarySheet && 'Summary sheet', oldWhere, !download.includeUnchanged && 'Changes only']
+      ? [
+          'Excel',
+          download.summarySheet && 'Summary sheet',
+          'Side by side',
+          !download.includeUnchanged && 'Changes only',
+        ]
           .filter(Boolean)
           .join(' · ')
       : `CSV · ${download.includeUnchanged ? 'All rows' : 'Changes only'}`,
@@ -315,18 +315,6 @@ export function SettingsCard() {
                     label="Summary sheet"
                     checked={download.summarySheet}
                     onChange={(v) => setDownload({ summarySheet: v })}
-                  />
-                </Line>
-                <Line title="Old values" hint="Where the first file's value appears.">
-                  <Segmented
-                    label="Old values"
-                    value={download.oldValues}
-                    onChange={(oldValues) => setDownload({ oldValues })}
-                    options={[
-                      { value: 'cell', label: 'In the cell' },
-                      { value: 'comment', label: 'Comment' },
-                      { value: 'column', label: 'Extra column' },
-                    ]}
                   />
                 </Line>
               </>

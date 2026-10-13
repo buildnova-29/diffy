@@ -4,7 +4,7 @@ import { useApp } from '../../state/store'
 import { isDefaultColours } from '../../state/settings'
 import { plural } from '../format'
 import { ArrowLeftIcon, DownloadIcon, InfoIcon } from '../icons'
-import { DiffTable, type Layout } from './DiffTable'
+import { DiffTable } from './DiffTable'
 import { differing } from './view'
 import './results.css'
 
@@ -35,7 +35,6 @@ export function ResultsScreen() {
       setSaving(false)
     }
   }
-  const [layout, setLayout] = useState<Layout>('table')
   if (!results) return null
 
   const total = results.reduce(
@@ -147,8 +146,6 @@ export function ResultsScreen() {
               key={current.name}
               diff={current}
               ignored={ignored}
-              layout={layout}
-              onLayout={setLayout}
               names={[first?.name ?? 'First file', second?.name ?? 'Second file']}
             />
           </div>

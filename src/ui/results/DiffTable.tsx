@@ -1,11 +1,9 @@
 import { useMemo, useState } from 'react'
-import type { CellValue, RowDiff, RowStatus, SheetDiff } from '../../core'
-import { formatCell, plural } from '../format'
-import { AlertIcon, EyeOffIcon, KeyIcon, SearchIcon } from '../icons'
+import type { SheetDiff } from '../../core'
+import { plural } from '../format'
+import { AlertIcon, SearchIcon } from '../icons'
 import { SideBySide } from './SideBySide'
-import { columnsOf, counts, sideColumns, valueOf, visibleRows, type Filter } from './view'
-
-export type Layout = 'table' | 'sbs'
+import { counts, sideColumns, visibleRows, type Filter } from './view'
 
 const PAGE = 200
 
@@ -16,23 +14,6 @@ const FILTERS: { value: Filter; label: string }[] = [
   { value: 'removed', label: 'Removed' },
   { value: 'unchanged', label: 'Unchanged' },
 ]
-
-/** Status shown as a symbol too, so it never depends on colour alone. */
-const MARK: Record<RowStatus, { sign: string; label: string }> = {
-  modified: { sign: '○', label: 'Changed' },
-  added: { sign: '+', label: 'Added: only in the second file' },
-  removed: { sign: '−', label: 'Removed: only in the first file' },
-  unchanged: { sign: '=', label: 'Unchanged' },
-}
-
-function Old({ v }: { v: CellValue }) {
-  const s = formatCell(v)
-  return <s className={`old${s ? '' : ' blank'}`}>{s || 'blank'}</s>
-}
-function New({ v }: { v: CellValue }) {
-  const s = formatCell(v)
-  return <b className={`new${s ? '' : ' blank'}`}>{s || 'blank'}</b>
-}
 
 function Notes({ d }: { d: SheetDiff }) {
   const notes: string[] = []
@@ -58,44 +39,16 @@ function Notes({ d }: { d: SheetDiff }) {
   )
 }
 
-/** One sheet's differences: filters, search and the table. */
-export function DiffTable({
-  diff,
-  ignored,
-  layout,
-  onLayout,
-  names,
-}: {
-  diff: SheetDiff
-  ignored: string[]
-  layout: Layout
-  onLayout: (l: Layout) => void
-  names: [string, string]
-}) {
+/** One sheet's differences: filters, search, and the two files side by side. */
+export function DiffTable({ diff, ignored, names }: { diff: SheetDiff; ignored: string[]; names: [string, string] }) {
   const [filter, setFilter] = useState<Filter>('all')
   const [search, setSearch] = useState('')
   const [limit, setLimit] = useState(PAGE)
 
-  const cols = useMemo(() => columnsOf(diff, ignored), [diff, ignored])
+  const cols = useMemo(() => sideColumns(diff, ignored), [diff, ignored])
   const n = useMemo(() => counts(diff.rows), [diff])
   const rows = useMemo(() => visibleRows(diff.rows, filter, search), [diff, filter, search])
   const shown = rows.slice(0, limit)
-
-  const cell = (r: RowDiff, name: string, kind: string) => {
-    if (kind === 'key' && !name) return r.key
-    const change = r.status === 'modified' ? r.changes.find((c) => c.column === name) : undefined
-    if (change)
-      return (
-        <span className="change">
-          <Old v={change.before} />
-          <span className="arrow" aria-label="changed to">
-            ›
-          </span>
-          <New v={change.after} />
-        </span>
-      )
-    return formatCell(valueOf(r, name))
-  }
 
   return (
     <>
@@ -120,25 +73,6 @@ export function DiffTable({
           ))}
         </div>
         <div className="tools-right">
-          <div className="segmented" role="radiogroup" aria-label="Layout">
-            {(
-              [
-                ['table', 'Table'],
-                ['sbs', 'Side by side'],
-              ] as const
-            ).map(([v, label]) => (
-              <button
-                key={v}
-                type="button"
-                role="radio"
-                aria-checked={layout === v}
-                className={layout === v ? 'on' : ''}
-                onClick={() => onLayout(v)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
           <label className="search">
             <SearchIcon size={17} />
             <input
@@ -156,74 +90,15 @@ export function DiffTable({
 
       <Notes d={diff} />
 
-      {layout === 'sbs' ? (
-        <SideBySide
-          rows={shown}
-          colsFirst={sideColumns(diff, ignored, 1)}
-          colsSecond={sideColumns(diff, ignored, 2)}
-          nameFirst={names[0]}
-          nameSecond={names[1]}
-        />
+      {shown.length === 0 ? (
+        <p className="sbs-empty">{search ? `No rows match "${search}".` : 'No rows here.'}</p>
       ) : (
-        <div className="diff-scroll">
-          <table className="diff">
-            <thead>
-              <tr>
-                <th className="mark-col">
-                  <span className="visually-hidden">Status</span>
-                </th>
-                {cols.map((c) => (
-                  <th
-                    key={`${c.kind}:${c.name}`}
-                    className={`th-${c.kind}`}
-                    title={c.kind === 'ignore' ? 'Ignored: not compared' : undefined}
-                  >
-                    <span className="th-in">
-                      {c.kind === 'key' && c.name && <KeyIcon size={14} />}
-                      {c.kind === 'ignore' && <EyeOffIcon size={14} />}
-                      {c.name || 'Row'}
-                    </span>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {shown.length === 0 && (
-                <tr>
-                  <td className="diff-empty" colSpan={cols.length + 1}>
-                    {search ? `No rows match "${search}".` : 'No rows here.'}
-                  </td>
-                </tr>
-              )}
-              {shown.map((r, i) => (
-                <tr key={`${r.key}#${i}`} className={`r-${r.status}`}>
-                  <td className="mark-col">
-                    <span
-                      className={`mark mark-${r.status}`}
-                      title={MARK[r.status].label}
-                      aria-label={MARK[r.status].label}
-                    >
-                      {MARK[r.status].sign}
-                    </span>
-                  </td>
-                  {cols.map((c) => {
-                    const changed = r.status === 'modified' && r.changes.some((x) => x.column === c.name)
-                    return (
-                      <td key={`${c.kind}:${c.name}`} className={`td-${c.kind}${changed ? ' cell-changed' : ''}`}>
-                        {cell(r, c.name, c.kind)}
-                      </td>
-                    )
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <SideBySide rows={shown} cols={cols} nameFirst={names[0]} nameSecond={names[1]} />
       )}
 
       <div className="table-foot">
         <span className="legend-row">
-          <span className="key-box key-changed" /> Changed cell: old › new
+          <span className="key-box key-changed" /> Changed cell
           <span className="key-box key-added" /> Only in second file
           <span className="key-box key-removed" /> Only in first file
         </span>

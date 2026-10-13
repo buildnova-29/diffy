@@ -238,134 +238,19 @@
   margin-top: 2px;
 }
 
-/* the table */
-.diff-scroll {
-  overflow: auto;
-  max-height: 70vh;
-  border-top: 1px solid var(--divider);
-  border-bottom: 1px solid var(--divider);
-}
-table.diff {
-  border-collapse: separate;
-  border-spacing: 0;
-  width: max-content;
-  min-width: 100%;
-  font-size: 15px;
-}
-.diff th {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  padding: 12px 16px;
-  background: var(--surface-sunken);
-  border-bottom: 1px solid var(--border);
-  text-align: left;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-.th-in {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.diff th.th-key {
-  color: var(--brand-1-text);
-}
-.diff th.th-ignore {
-  color: var(--text-faint);
-  text-decoration: line-through;
-}
-.diff td {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--divider);
-  color: var(--text);
-  white-space: nowrap;
-  max-width: 320px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.diff tbody tr:last-child td {
-  border-bottom: 0;
-}
-.diff .mark-col {
-  width: 44px;
-  padding-right: 4px;
-}
-.diff td.td-key {
-  font-weight: 500;
-}
-.diff td.td-ignore {
-  color: var(--text-faint);
-}
-
-.mark {
-  width: 26px;
-  height: 26px;
-  border-radius: 7px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1;
-}
-.mark-modified {
-  background: var(--changed-bg);
-  color: var(--changed-fg);
-  font-size: 12px;
-}
-.mark-unchanged {
-  background: var(--surface-sunken);
-  color: var(--text-faint);
-}
-.mark-added {
-  color: var(--added-fg);
-}
-.mark-removed {
-  color: var(--removed-fg);
-}
-
-.r-unchanged td {
-  color: var(--text-muted);
-}
+/* row colours, shared by both sides */
 .r-added {
   background: var(--added-bg);
 }
 .r-removed {
   background: var(--removed-bg);
 }
-.r-removed td:not(.mark-col) {
-  color: var(--removed-fg);
-  text-decoration: line-through;
-}
-.diff td.cell-changed {
-  background: var(--changed-bg);
-}
-.change {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 8px;
-}
-.change .old {
-  color: var(--text-faint);
-}
-.change .new {
-  color: var(--changed-fg);
-  font-weight: 600;
-}
-.change .blank {
-  font-style: italic;
-  font-weight: 400;
-}
-.change .arrow {
-  color: var(--changed-fg);
-}
-.diff-empty {
-  padding: 28px 16px !important;
+.sbs-empty {
+  margin: 0;
+  padding: 32px 20px;
   text-align: center;
-  color: var(--text-faint) !important;
+  color: var(--text-faint);
+  border-top: 1px solid var(--divider);
 }
 
 .table-foot {
@@ -486,7 +371,7 @@ table.diff {
   outline: 2px solid var(--brand-1);
   outline-offset: -2px;
 }
-/* The middle strip follows the two sides; it has no scrollbar of its own. */
+/* The middle strip follows the two sides; it never scrolls sideways. */
 .sbs-pane-mid {
   overflow-x: scroll;
   overflow-y: hidden;
@@ -496,9 +381,41 @@ table.diff {
 table.sbs-table {
   border-collapse: separate;
   border-spacing: 0;
-  width: max-content;
-  min-width: 100%;
+  table-layout: fixed;
   font-size: 15px;
+}
+.sbs-pane-mid table.sbs-table {
+  width: 100%;
+}
+/* The first column (the key) stays in view while scrolling sideways. */
+.sbs-table .sticky {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--surface);
+  box-shadow: 1px 0 0 var(--divider);
+}
+.sbs-table th.sticky {
+  z-index: 2;
+  background: var(--surface-sunken);
+}
+.sbs-table .r-added td.sticky {
+  background: var(--added-bg);
+}
+.sbs-table .r-removed td.sticky {
+  background: var(--removed-bg);
+}
+.sbs-table .r-missing td.sticky {
+  background: var(--surface-sunken);
+}
+/* A column the other file has, but this one doesn't. */
+.sbs-table th.th-absent {
+  color: var(--text-faint);
+  font-weight: 400;
+  font-style: italic;
+}
+.sbs-table td.td-absent {
+  background: repeating-linear-gradient(135deg, transparent 0 6px, var(--divider) 6px 7px);
 }
 .sbs-table th {
   position: sticky;
@@ -534,7 +451,6 @@ table.sbs-table {
   border-bottom: 1px solid var(--divider);
   color: var(--text);
   white-space: nowrap;
-  max-width: 260px;
   overflow: hidden;
   text-overflow: ellipsis;
 }

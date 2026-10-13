@@ -37,51 +37,59 @@ async function roundTrip(i: ReportInput) {
   return back
 }
 
+/** Cell values of one row as text, starting at column A. */
+const rowText = (ws: ExcelJS.Worksheet, r: number) =>
+  Array.from((ws.getRow(r).values as unknown[]).slice(1), (v) => (v == null ? '' : String(v)))
+
 describe('Excel report', () => {
-  it('has a Summary, then a list tab and a side-by-side tab for every compared sheet', async () => {
+  it('has a Summary, then one side-by-side tab per compared sheet', async () => {
     const wb = await roundTrip(input())
     const names = wb.worksheets.map((w) => w.name)
-    expect(names[0]).toBe('Summary')
-    expect(names).toContain('Employees')
-    expect(names).toContain('Employees side by side')
-    expect(names).toHaveLength(1 + results.length * 2)
+    expect(names).toEqual(['Summary', ...results.map((d) => d.name)])
     expect(wb.getWorksheet('Summary')!.getCell('B7').value).toBe('75 rows differ across 7 sheets')
   })
 
-  it('marks a changed cell, keeps the old value in a comment, and lists every row', async () => {
+  it('puts both files next to each other with the same columns, split in the middle', async () => {
     const ws = (await roundTrip(input())).getWorksheet('Tickets')!
-    const header = (ws.getRow(1).values as unknown[]).slice(1)
-    expect(header[0]).toBe('Status')
-    expect(header[1]).toBe('🔑 Ticket ID')
-    const statusCol = ws.getColumn(1).values.slice(2)
-    expect(statusCol.filter((v) => v === 'Changed')).toHaveLength(4)
-    expect(statusCol).toHaveLength(results.find((d) => d.name === 'Tickets')!.rows.length)
-    const noted: string[] = []
+    const header = rowText(ws, 2)
+    const mid = header.indexOf('')
+    const left = header.slice(0, mid)
+    const right = header.slice(mid + 1)
+    expect(left[0]).toBe('🔑 Ticket ID')
+    expect(right).toEqual(left)
+    expect(ws.views[0]).toMatchObject({ state: 'split' })
+    const signs = ws.getColumn(mid + 1).values.slice(3)
+    expect(signs.filter((v) => v === '≠')).toHaveLength(4)
+    expect(signs).toHaveLength(results.find((d) => d.name === 'Tickets')!.rows.length)
+  })
+
+  it('shows the old value on the left, the new one on the right, with a "Was" comment', async () => {
+    const ws = (await roundTrip(input())).getWorksheet('Tickets')!
+    const notes: string[] = []
     ws.eachRow((row) =>
-      row.eachCell((c) => c.note && noted.push(String(typeof c.note === 'string' ? c.note : JSON.stringify(c.note)))),
+      row.eachCell((c) => c.note && notes.push(typeof c.note === 'string' ? c.note : JSON.stringify(c.note))),
     )
-    expect(noted.length).toBe(4)
-    expect(noted.join()).toContain('Was:')
+    expect(notes).toHaveLength(4)
+    expect(notes.join()).toContain('Was:')
+  })
+
+  it('greys out a column on the side that does not have it', async () => {
+    const header = rowText((await roundTrip(input())).getWorksheet('Customers')!, 2)
+    expect(header.filter((h) => h === 'Fax (not in this file)')).toHaveLength(1)
+    expect(header.filter((h) => h === 'Fax')).toHaveLength(1)
   })
 
   it('can leave out unchanged rows and the Summary', async () => {
     const wb = await roundTrip(input({ includeUnchanged: false, summarySheet: false }))
     expect(wb.worksheets[0].name).toBe('Orders')
-    const status = wb.getWorksheet('Holidays')!.getColumn(1).values.slice(2)
-    expect(status).toHaveLength(0)
-  })
-
-  it('can put old values in an extra column', async () => {
-    const ws = (await roundTrip(input({ oldValues: 'column' }))).getWorksheet('Customers')!
-    const header = (ws.getRow(1).values as unknown[]).slice(1).map(String)
-    expect(header.some((h) => h.endsWith('(was)'))).toBe(true)
+    expect(wb.getWorksheet('Holidays')!.rowCount).toBe(2)
   })
 
   it('writes dates with the same calendar day and time', async () => {
     const ws = (await roundTrip(input())).getWorksheet('Tickets')!
-    const col = (ws.getRow(1).values as unknown[]).indexOf('Opened')
-    const d = ws.getRow(2).getCell(col).value as Date
-    const src = results.find((x) => x.name === 'Tickets')!.rows[0].afterRow!.values.Opened as Date
+    const col = rowText(ws, 2).indexOf('Opened') + 1
+    const d = ws.getRow(3).getCell(col).value as Date
+    const src = results.find((x) => x.name === 'Tickets')!.rows[0].beforeRow!.values.Opened as Date
     expect([d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()]).toEqual([
       src.getFullYear(),
       src.getMonth(),

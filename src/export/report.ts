@@ -1,6 +1,6 @@
 /**
  * Builds the diffy Excel report from a finished comparison.
- * Tabs: Summary (optional), then for every compared sheet a list tab and a side-by-side tab.
+ * Tabs: Summary (optional), then one side-by-side tab per compared sheet.
  * Follows the user's Color and Download settings. Runs in the browser and in tests.
  */
 import type ExcelJS from 'exceljs'
@@ -138,12 +138,13 @@ function put(cell: Cell, v: CellValue) {
   if (nf) cell.numFmt = nf
 }
 
-const STATUS = { modified: 'Changed', added: 'Added', removed: 'Removed', unchanged: 'Unchanged' } as const
 const SIGN = { modified: '≠', added: '+', removed: '−', unchanged: '=' } as const
 
 interface Col {
   name: string
   kind: 'key' | 'compare' | 'ignore' | 'only'
+  /** For 'only' columns: the file that has it. */
+  only?: 1 | 2
 }
 
 function columnsFor(d: SheetDiff, ignored: string[]): Col[] {
@@ -179,131 +180,6 @@ function styleHeader(cell: Cell, kind: Col['kind'] | 'status' | 'was') {
 }
 
 /* ------------------------------------------------------------------ */
-/* One tab per compared sheet: Status column first, changes marked.    */
-/* ------------------------------------------------------------------ */
-function addListSheet(
-  wb: Workbook,
-  tab: string,
-  d: SheetDiff,
-  ignored: string[],
-  rows: RowDiff[],
-  pal: Pal,
-  oldValues: DownloadSettings['oldValues'],
-) {
-  const cols = columnsFor(d, ignored)
-  const changedCols = new Set(rows.flatMap((r) => r.changes.map((c) => c.column)))
-  const ws = wb.addWorksheet(tab, {
-    views: [{ state: 'frozen', ySplit: 1, xSplit: 1 + Math.max(d.keyColumns.length, 1) }],
-  })
-
-  // Layout: Status, then each column; in "extra column" mode a "(was)" column follows each column that changed.
-  type Slot = { col: Col; was: boolean }
-  const slots: Slot[] = []
-  for (const c of cols) {
-    slots.push({ col: c, was: false })
-    if (oldValues === 'column' && c.kind === 'compare' && changedCols.has(c.name)) slots.push({ col: c, was: true })
-  }
-
-  const head = ws.getRow(1)
-  head.height = 22
-  const st = head.getCell(1)
-  st.value = 'Status'
-  styleHeader(st, 'status')
-  slots.forEach((s, i) => {
-    const cell = head.getCell(2 + i)
-    cell.value = s.was ? `${s.col.name} (was)` : headerText(s.col)
-    styleHeader(cell, s.was ? 'was' : s.col.kind)
-  })
-
-  const sample = (name: string) =>
-    rows.map((r) => (r.status === 'removed' ? r.beforeRow : r.afterRow)?.values[name] ?? null)
-  ws.getColumn(1).width = 12
-  slots.forEach((s, i) => {
-    ws.getColumn(2 + i).width =
-      s.col.kind === 'key' && !s.col.name
-        ? 10
-        : widthOf(s.was ? `${s.col.name} (was)` : headerText(s.col), sample(s.col.name))
-  })
-
-  rows.forEach((r, ri) => {
-    const row = ws.getRow(2 + ri)
-    const status = row.getCell(1)
-    status.value = STATUS[r.status]
-    const tone =
-      r.status === 'modified'
-        ? pal.changed
-        : r.status === 'added'
-          ? pal.added
-          : r.status === 'removed'
-            ? pal.removed
-            : null
-    status.font = F({ bold: r.status !== 'unchanged', color: { argb: tone ? tone.ink : FAINT } })
-    status.border = box
-
-    const src = r.status === 'removed' ? r.beforeRow : r.afterRow
-    slots.forEach((s, i) => {
-      const cell = row.getCell(2 + i)
-      cell.border = box
-      const change = r.status === 'modified' ? r.changes.find((c) => c.column === s.col.name) : undefined
-
-      if (s.was) {
-        if (change) {
-          put(cell, change.before)
-          cell.font = F({ italic: true, color: { argb: FAINT } })
-        }
-        return
-      }
-      if (s.col.kind === 'key' && !s.col.name) {
-        cell.value = r.key
-        cell.font = F({ bold: true })
-        return
-      }
-      const v = src?.values[s.col.name] ?? null
-      if (change && oldValues === 'cell') {
-        const was = formatCell(change.before) || 'blank'
-        const now = formatCell(change.after) || 'blank'
-        cell.value = {
-          richText: [
-            { text: was, font: F({ strike: true, color: { argb: FAINT } }) },
-            { text: '  →  ', font: F({ color: { argb: pal.changed.ink } }) },
-            { text: now, font: F({ bold: true, color: { argb: pal.changed.ink } }) },
-          ],
-        }
-      } else {
-        put(cell, v)
-        cell.font = F({
-          bold: s.col.kind === 'key',
-          color: { argb: s.col.kind === 'ignore' ? 'FFA1A1AE' : r.status === 'unchanged' ? MUTED : INK },
-        })
-      }
-      if (change) {
-        if (pal.useFill) cell.fill = fill(pal.changed.fill)
-        if (oldValues !== 'cell') cell.font = F({ bold: true, color: { argb: pal.changed.ink } })
-        if (oldValues === 'comment')
-          cell.note = `Was: ${formatCell(change.before) || '(blank)'}   (first file)\nNow: ${formatCell(change.after) || '(blank)'}   (second file)`
-      }
-    })
-
-    if (r.status === 'added' || r.status === 'removed') {
-      const t = r.status === 'added' ? pal.added : pal.removed
-      for (let c = 1; c <= slots.length + 1; c++) {
-        const cell = row.getCell(c)
-        if (pal.useFill) cell.fill = fill(t.fill)
-        if (c > 1)
-          cell.font = F({
-            bold: c === 2,
-            strike: r.status === 'removed',
-            color: { argb: r.status === 'removed' || !pal.useFill ? t.ink : INK },
-          })
-      }
-    }
-  })
-
-  ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: slots.length + 1 } }
-  return ws
-}
-
-/* ------------------------------------------------------------------ */
 /* Side by side: File 1 left, File 2 right, split so each scrolls.     */
 /* ------------------------------------------------------------------ */
 function addSideBySide(
@@ -315,9 +191,15 @@ function addSideBySide(
   pal: Pal,
   names: [string, string],
 ) {
-  const base = columnsFor(d, ignored)
-  const left: Col[] = [...base, ...d.columnsOnlyInBefore.map((name): Col => ({ name, kind: 'only' }))]
-  const right: Col[] = [...base, ...d.columnsOnlyInAfter.map((name): Col => ({ name, kind: 'only' }))]
+  // Both halves get the same columns in the same order, so a column sits in the same place on each side.
+  // A column that only one file has is greyed out on the other side.
+  const shared: Col[] = [
+    ...columnsFor(d, ignored),
+    ...d.columnsOnlyInBefore.map((name): Col => ({ name, kind: 'only', only: 1 })),
+    ...d.columnsOnlyInAfter.map((name): Col => ({ name, kind: 'only', only: 2 })),
+  ]
+  const left = shared
+  const right = shared
   const ws = wb.addWorksheet(tab)
   const L = left.length
   const MID = L + 1
@@ -325,11 +207,11 @@ function addSideBySide(
 
   const valuesOf = (side: 'before' | 'after', name: string) =>
     rows.map((r) => (side === 'before' ? r.beforeRow : r.afterRow)?.values[name] ?? null)
-  const widths = [
-    ...left.map((c) => (c.kind === 'key' && !c.name ? 10 : widthOf(headerText(c), valuesOf('before', c.name)))),
-    5,
-    ...right.map((c) => (c.kind === 'key' && !c.name ? 10 : widthOf(headerText(c), valuesOf('after', c.name)))),
-  ]
+  const colWidth = (c: Col) =>
+    c.kind === 'key' && !c.name
+      ? 10
+      : widthOf(headerText(c), [...valuesOf('before', c.name), ...valuesOf('after', c.name)])
+  const widths = [...left.map(colWidth), 5, ...right.map(colWidth)]
   widths.forEach((w, i) => (ws.getColumn(i + 1).width = w))
 
   // Name bars
@@ -348,14 +230,16 @@ function addSideBySide(
 
   const hr = ws.getRow(2)
   hr.height = 22
+  const head = (c: Col, here: 1 | 2) =>
+    c.kind === 'only' && c.only !== here ? `${c.name} (not in this file)` : headerText(c)
   left.forEach((c, i) => {
     const cell = hr.getCell(1 + i)
-    cell.value = headerText(c)
+    cell.value = head(c, 1)
     styleHeader(cell, c.kind)
   })
   right.forEach((c, i) => {
     const cell = hr.getCell(R0 + i)
-    cell.value = headerText(c)
+    cell.value = head(c, 2)
     styleHeader(cell, c.kind)
   })
   styleHeader(hr.getCell(MID), 'status')
@@ -368,10 +252,11 @@ function addSideBySide(
       ['R', right, R0],
     ] as const) {
       const src = side === 'L' ? r.beforeRow : r.afterRow
+      const here = side === 'L' ? 1 : 2
       cols.forEach((c, j) => {
         const cell = row.getCell(start + j)
         cell.border = box
-        if (!src) {
+        if (!src || (c.kind === 'only' && c.only !== here)) {
           cell.fill = fill(EMPTY)
           return
         }
@@ -398,6 +283,9 @@ function addSideBySide(
             side === 'L'
               ? F({ strike: true, color: { argb: FAINT } })
               : F({ bold: true, color: { argb: pal.changed.ink } })
+          const ch = r.changes.find((x) => x.column === c.name)
+          if (side === 'R' && ch)
+            cell.note = `Was: ${formatCell(ch.before) || '(blank)'}   (first file)\nNow: ${formatCell(ch.after) || '(blank)'}   (second file)`
         }
         cell.font = font
       })
@@ -425,7 +313,7 @@ function addSideBySide(
   const xSplit = Math.min(Math.round((leftChars * 7 + 5) * 0.75 * 20), 9600)
   // A second split under the two header rows keeps the file names and column names in view.
   const ySplit = (24 + 22) * 20
-  ws.views = [{ state: 'split', xSplit, ySplit, topLeftCell: ws.getCell(3, R0).address, activeCell: 'A3' }]
+  ws.views = [{ state: 'split', xSplit, ySplit, topLeftCell: `${ws.getColumn(R0).letter}3`, activeCell: 'A3' }]
   return ws
 }
 
@@ -662,13 +550,12 @@ export function buildReport(wb: Workbook, input: ReportInput): Workbook {
   const tabs = input.results.map((d) => {
     const ignored = input.plan.find((p) => p.first === d.name)?.ignored ?? []
     const rows = input.download.includeUnchanged ? d.rows : d.rows.filter((r) => r.status !== 'unchanged')
-    return { diff: d, ignored, rows, list: name(d.name), sbs: name(`${d.name} side by side`) }
+    return { diff: d, ignored, rows, list: name(d.name) }
   })
 
   if (input.download.summarySheet) addSummary(wb, input, tabs, pal)
   for (const t of tabs) {
-    addListSheet(wb, t.list, t.diff, t.ignored, t.rows, pal, input.download.oldValues)
-    addSideBySide(wb, t.sbs, t.diff, t.ignored, t.rows, pal, [input.firstName, input.secondName])
+    addSideBySide(wb, t.list, t.diff, t.ignored, t.rows, pal, [input.firstName, input.secondName])
   }
   return wb
 }

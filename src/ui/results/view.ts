@@ -10,6 +10,8 @@ export type Filter = 'all' | RowStatus
 export interface Column {
   name: string
   kind: 'key' | 'compare' | 'ignore' | 'only'
+  /** For 'only' columns: the file that has it. */
+  only?: 1 | 2
 }
 
 /** Key columns first, then compared columns, then ignored ones (shown greyed). */
@@ -24,10 +26,28 @@ export function columnsOf(d: SheetDiff, ignored: string[]): Column[] {
   ]
 }
 
-/** Side by side: each file also shows the columns only it has. */
-export function sideColumns(d: SheetDiff, ignored: string[], which: 1 | 2): Column[] {
-  const only = which === 1 ? d.columnsOnlyInBefore : d.columnsOnlyInAfter
-  return [...columnsOf(d, ignored), ...only.map((name): Column => ({ name, kind: 'only' }))]
+/**
+ * Side by side: both files show the same columns in the same order, so scrolling one side
+ * lines up with the other. Columns that exist in only one file are blank on the other side.
+ */
+export function sideColumns(d: SheetDiff, ignored: string[]): Column[] {
+  return [
+    ...columnsOf(d, ignored),
+    ...d.columnsOnlyInBefore.map((name): Column => ({ name, kind: 'only', only: 1 })),
+    ...d.columnsOnlyInAfter.map((name): Column => ({ name, kind: 'only', only: 2 })),
+  ]
+}
+
+/** A width in pixels that fits the header and most values of a column, from both files. */
+export function columnWidth(c: Column, rows: RowDiff[]): number {
+  if (c.kind === 'key' && !c.name) return 96
+  let chars = c.name.length + 3
+  for (const r of rows.slice(0, 400))
+    for (const row of [r.beforeRow, r.afterRow]) {
+      const v = row?.values[c.name]
+      if (v !== undefined && v !== null) chars = Math.max(chars, formatCell(v).length)
+    }
+  return Math.min(Math.max(Math.round(chars * 8.6 + 30), 72), 320)
 }
 
 /** The value to show for a row: the second file's, except for removed rows. */
