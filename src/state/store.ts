@@ -70,6 +70,10 @@ interface AppState {
   toggleSheet: (index: number) => void
   pairWith: (index: number, second: string | null) => void
   setColumnRole: (index: number, column: string, role: ColumnRole) => void
+  /** Replace the key of one sheet; [] means row by row. */
+  setKey: (index: number, columns: string[]) => void
+  /** Tick or untick every sheet that is in both files. */
+  setAllSheets: (on: boolean) => void
   setMatch: (patch: Partial<MatchSettings>) => void
   setColours: (patch: Partial<ColourSettings>) => void
   setDownload: (patch: Partial<DownloadSettings>) => void
@@ -178,7 +182,11 @@ export const useApp = create<AppState>((set, get) => ({
       }
     })
     const name = plan[index].first!
-    set((s) => ({ plan: nextPlan, tables: nextTables, pairedByHand: [...s.pairedByHand.filter((n) => n !== name), name] }))
+    set((s) => ({
+      plan: nextPlan,
+      tables: nextTables,
+      pairedByHand: [...s.pairedByHand.filter((n) => n !== name), name],
+    }))
   },
 
   setColumnRole: (index, column, role) => {
@@ -192,6 +200,18 @@ export const useApp = create<AppState>((set, get) => ({
     set({ plan: plan.map((x, i) => (i === index ? { ...x, key, ignored: roles.ignored } : x)) })
   },
 
+  setKey: (index, columns) => {
+    const { plan, tables, match } = get()
+    const p = plan[index]
+    const t = tables[index]
+    if (!p || !t.first || !t.second) return
+    const key = checkKey(t.first, t.second, columns, CompareOptionsSchema.parse(toEngineOptions(match)))
+    const ignored = p.ignored.filter((c) => !columns.includes(c))
+    set({ plan: plan.map((x, i) => (i === index ? { ...x, key, ignored } : x)) })
+  },
+
+  setAllSheets: (on) => set((s) => ({ plan: s.plan.map((p) => (p.first && p.second ? { ...p, included: on } : p)) })),
+
   setMatch: (patch) => {
     const match = { ...get().match, ...patch }
     const opts = CompareOptionsSchema.parse(toEngineOptions(match))
@@ -199,7 +219,9 @@ export const useApp = create<AppState>((set, get) => ({
     // Case and spaces change which values count as repeats, so re-check each key.
     const next = plan.map((p, i) => {
       const t = tables[i]
-      return t?.first && t.second && p.key.columns.length ? { ...p, key: checkKey(t.first, t.second, p.key.columns, opts) } : p
+      return t?.first && t.second && p.key.columns.length
+        ? { ...p, key: checkKey(t.first, t.second, p.key.columns, opts) }
+        : p
     })
     set({ match, plan: next })
   },

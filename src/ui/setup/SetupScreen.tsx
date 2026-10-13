@@ -1,12 +1,11 @@
 import { useApp } from '../../state/store'
 import { plural } from '../format'
 import { ArrowLeftIcon, ArrowRightIcon } from '../icons'
-import { KeysSection } from './KeysSection'
-import { OptionBoxes } from './OptionBoxes'
-import { SheetsSection } from './SheetsSection'
+import { SettingsCard } from './SettingsCard'
+import { Banner, SheetTable } from './SheetTable'
 import './setup.css'
 
-/** Screen 2: check what diffy worked out, and adjust it. */
+/** Screen 2: check what diffy worked out, and adjust it if needed. */
 export function SetupScreen() {
   const { plan, busy, error, goTo, compare } = useApp()
   const count = plan.filter((p) => p.included && p.first && p.second).length
@@ -17,9 +16,9 @@ export function SetupScreen() {
         <h1>How should diffy compare?</h1>
       </div>
 
-      <SheetsSection />
-      <KeysSection />
-      <OptionBoxes />
+      <Banner />
+      <SheetTable />
+      <SettingsCard />
 
       {error && (
         <p className="form-error" role="alert">

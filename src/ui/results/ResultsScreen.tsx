@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useApp } from '../../state/store'
-import { paletteOf } from '../../state/settings'
+import { isDefaultColours } from '../../state/settings'
 import { plural } from '../format'
 import { ArrowLeftIcon, DownloadIcon, InfoIcon } from '../icons'
 import { DiffTable, type Layout } from './DiffTable'
@@ -33,16 +33,14 @@ export function ResultsScreen() {
       why: !p.second ? 'only in the first file' : !p.first ? 'only in the second file' : 'skipped',
     }))
 
-  // The chosen colours. "Default" keeps the built-in light and dark shades.
-  const pal = paletteOf(colours)
-  const style =
-    colours.preset === 'default'
-      ? undefined
-      : ({
-          '--hl-changed': pal.changed,
-          '--hl-added': pal.added,
-          '--hl-removed': pal.removed,
-        } as React.CSSProperties)
+  // The chosen colours. The defaults keep the built-in light and dark shades.
+  const style = isDefaultColours(colours)
+    ? undefined
+    : ({
+        '--hl-changed': colours.changed,
+        '--hl-added': colours.added,
+        '--hl-removed': colours.removed,
+      } as React.CSSProperties)
 
   return (
     <main className={`page page-results${style ? ' custom-colours' : ''}`} style={style}>

@@ -28,31 +28,42 @@ export function toEngineOptions(m: MatchSettings): Partial<CompareOptions> {
   }
 }
 
-/** "Colours": the three highlight colours, used on screen and in the report. */
-export type ColourPreset = 'default' | 'colourblind' | 'excel' | 'custom'
-
+/** "Color": one highlight colour per kind of change, used on screen and in the report. */
 export interface Palette {
   changed: string
   added: string
   removed: string
 }
 
-export const PRESETS: Record<Exclude<ColourPreset, 'custom'>, { label: string; palette: Palette }> = {
-  default: { label: 'Default', palette: { changed: '#FFF1C2', added: '#EAF6EE', removed: '#FDECEC' } },
-  colourblind: { label: 'Colour-blind safe', palette: { changed: '#FFF1C2', added: '#DCE9FF', removed: '#FDE3CF' } },
-  excel: { label: 'Excel classic', palette: { changed: '#FFEB9C', added: '#C6EFCE', removed: '#FFC7CE' } },
+/** The ready-made colours in the picker. All light, so dark text stays readable on them. */
+export const SWATCHES: { name: string; hex: string }[] = [
+  { name: 'Yellow', hex: '#FFF1C2' },
+  { name: 'Orange', hex: '#FFDDB0' },
+  { name: 'Red', hex: '#FDECEC' },
+  { name: 'Pink', hex: '#FBE1EE' },
+  { name: 'Purple', hex: '#ECE5FF' },
+  { name: 'Blue', hex: '#DCE9FF' },
+  { name: 'Green', hex: '#EAF6EE' },
+  { name: 'Grey', hex: '#EDEDF0' },
+]
+
+export const swatchName = (hex: string) =>
+  SWATCHES.find((s) => s.hex.toLowerCase() === hex.toLowerCase())?.name ?? 'Custom'
+
+export interface ColourSettings extends Palette {
+  /** Mark changes with a fill colour (default) or a font colour. */
+  highlight: 'fill' | 'font'
 }
 
-export interface ColourSettings {
-  preset: ColourPreset
-  custom: Palette
+export const DEFAULT_COLOURS: ColourSettings = {
+  changed: '#FFF1C2',
+  added: '#EAF6EE',
+  removed: '#FDECEC',
+  highlight: 'fill',
 }
 
-export const DEFAULT_COLOURS: ColourSettings = { preset: 'default', custom: { ...PRESETS.default.palette } }
-
-export function paletteOf(c: ColourSettings): Palette {
-  return c.preset === 'custom' ? c.custom : PRESETS[c.preset].palette
-}
+export const isDefaultColours = (c: ColourSettings) =>
+  (['changed', 'added', 'removed'] as const).every((k) => c[k].toLowerCase() === DEFAULT_COLOURS[k].toLowerCase())
 
 /** "Download settings": how the report file is built. Downloading is optional. */
 export interface DownloadSettings {
@@ -60,7 +71,6 @@ export interface DownloadSettings {
   format: 'xlsx' | 'csv'
   includeUnchanged: boolean
   summarySheet: boolean
-  highlight: 'fill' | 'font'
   oldValues: 'cell' | 'comment' | 'column'
 }
 
@@ -69,8 +79,7 @@ export const DEFAULT_DOWNLOAD: DownloadSettings = {
   format: 'xlsx',
   includeUnchanged: true,
   summarySheet: true,
-  highlight: 'fill',
-  oldValues: 'cell',
+  oldValues: 'comment',
 }
 
 /** "price list march.xlsx" + "price list april.xlsx" → "diffy_price_list_march_vs_price_list_april". */
